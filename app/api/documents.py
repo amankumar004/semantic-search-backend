@@ -15,3 +15,19 @@ def upload_document(
 ) -> DocumentRead:
     service = DocumentService(db)
     return service.upload_document(file=file)
+
+
+@router.get("/{document_id}", response_model=DocumentRead)
+def get_document(document_id: int, db: Session = Depends(get_db)) -> DocumentRead:
+    service = DocumentService(db)
+    return service.get_document(document_id=document_id)
+
+@router.get("/", response_model=list[DocumentRead])
+def list_documents(db: Session = Depends(get_db)) -> list[DocumentRead]:
+    service = DocumentService(db)
+    return service.list_documents()
+
+@router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_document(document_id: int, db: Session = Depends(get_db)):
+    service = DocumentService(db)
+    service.delete_document(document_id=document_id)

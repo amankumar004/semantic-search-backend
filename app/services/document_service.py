@@ -88,3 +88,39 @@ class DocumentService:
         created_document = repository.create_document(document=document)
 
         return DocumentRead.model_validate(created_document)
+    
+    
+    def get_document(self, document_id: int) -> DocumentRead:
+        repository = DocumentRepository(self.db)
+        document = repository.get_document_by_id(document_id=document_id)
+        
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {document_id} not found.",
+            )
+            
+        return DocumentRead.model_validate(document)
+    
+    def list_documents(self) -> list[DocumentRead]:
+        repository = DocumentRepository(self.db)
+        documents = repository.list_documents()
+        return [DocumentRead.model_validate(doc) for doc in documents]
+    
+    def delete_document(self, document_id: int):
+        repository = DocumentRepository(self.db)
+        document = repository.get_document_by_id(document_id=document_id)
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {document_id} not found.",
+            )
+
+        # Delete the file from disk
+        file_path = Path(str(document.file_path))
+        if file_path.exists():
+            file_path.unlink()  # Delete the file
+        
+        # Delete from DB
+        repository.delete_document(document_id=document_id)
