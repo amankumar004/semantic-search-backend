@@ -8,6 +8,7 @@ from app.models.document import Document
 from app.models.enums import DocumentStatus
 from app.repositories.document_repository import DocumentRepository
 from app.schemas.document import DocumentRead
+from app.services.pdf_service import PDFService
 
 # Configuration
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -124,3 +125,26 @@ class DocumentService:
         
         # Delete from DB
         repository.delete_document(document_id=document_id)
+    
+    def get_document_chunks(self, document_id: int):
+        repository = DocumentRepository(self.db)
+        document = repository.get_document_by_id(document_id=document_id)
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {document_id} not found.",
+            )
+
+        # Read the file and split into chunks
+        file_path = Path(str(document.file_path))
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File for document ID {document_id} not found on disk.",
+            )
+
+        # call the pdf Service to get the chunks
+        pdf_service = PDFService()
+        text = pdf_service.extract_text_from_pdf(file_path=str(file_path))
+        return {"document_id": document_id, "chunks": [text]}

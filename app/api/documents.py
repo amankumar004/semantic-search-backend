@@ -31,3 +31,8 @@ def list_documents(db: Session = Depends(get_db)) -> list[DocumentRead]:
 def delete_document(document_id: int, db: Session = Depends(get_db)):
     service = DocumentService(db)
     service.delete_document(document_id=document_id)
+    
+@router.get("/{document_id}/chunks")
+def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
+    service = DocumentService(db)
+    return service.get_document_chunks(document_id=document_id)
