@@ -2,7 +2,7 @@ from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.schemas.document import DocumentRead
+from app.schemas.document import DocumentChunksResponse, DocumentRead
 from app.services.document_service import DocumentService
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -32,7 +32,7 @@ def delete_document(document_id: int, db: Session = Depends(get_db)):
     service = DocumentService(db)
     service.delete_document(document_id=document_id)
     
-@router.get("/{document_id}/chunks")
+@router.get("/{document_id}/chunks", response_model=DocumentChunksResponse)
 def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
     service = DocumentService(db)
     return service.get_document_chunks(document_id=document_id)

@@ -13,3 +13,14 @@ class DocumentRead(BaseModel):
     status: str
     created_at: datetime | None = None
     updated_at: datetime | None = None
+
+
+class ChunkRead(BaseModel):
+    chunk_index: int
+    text: str
+
+
+class DocumentChunksResponse(BaseModel):
+    document_id: int
+    total_chunks: int
+    chunks: list[ChunkRead]

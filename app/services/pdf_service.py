@@ -10,9 +10,11 @@ class PDFService:
         """
         # Implementation for extracting text from PDF
         reader = PdfReader(file_path)
-        text = ""
+        pages = []
         
         for page in reader.pages:
-            text += page.extract_text()
+            page_text = page.extract_text()
+            if page_text:
+                pages.append(page_text)
             
-        return text.strip()
+        return "\n".join(pages).strip()

@@ -7,8 +7,9 @@ from sqlalchemy.orm import Session
 from app.models.document import Document
 from app.models.enums import DocumentStatus
 from app.repositories.document_repository import DocumentRepository
-from app.schemas.document import DocumentRead
+from app.schemas.document import ChunkRead, DocumentChunksResponse, DocumentRead
 from app.services.pdf_service import PDFService
+from app.services.text_splitter import TextSplitter
 
 # Configuration
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -147,4 +148,18 @@ class DocumentService:
         # call the pdf Service to get the chunks
         pdf_service = PDFService()
         text = pdf_service.extract_text_from_pdf(file_path=str(file_path))
-        return {"document_id": document_id, "chunks": [text]}
+        
+        # Return the chunks as a response
+        text_splitter = TextSplitter()
+        chunks = text_splitter.split_text(text=text)
+        
+        chunk_object = []
+        
+        for index, chunk in enumerate(chunks):
+            chunk_object.append(
+                ChunkRead(
+                    chunk_index=index,
+                    text=chunk
+                )
+            )
+        return DocumentChunksResponse(document_id=document_id, total_chunks=len(chunks), chunks=chunk_object)
