@@ -22,3 +22,7 @@ venv/
 
 # Uploads
 uploads/
+
+.pytest_cache/
+
+pytest.ini/

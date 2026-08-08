@@ -10,6 +10,7 @@ from app.repositories.document_repository import DocumentRepository
 from app.schemas.document import ChunkRead, DocumentChunksResponse, DocumentRead
 from app.services.pdf_service import PDFService
 from app.services.text_splitter import TextSplitter
+from app.services.embedding_service import EmbeddingService
 
 # Configuration
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -163,3 +164,40 @@ class DocumentService:
                 )
             )
         return DocumentChunksResponse(document_id=document_id, total_chunks=len(chunks), chunks=chunk_object)
+    
+    
+    def generate_document_embeddings(self, document_id: int):
+        repository = DocumentRepository(self.db)
+
+        document = repository.get_document_by_id(document_id=document_id)
+
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {document_id} not found.",
+            )
+
+        file_path = Path(str(document.file_path))
+
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File for document ID {document_id} not found on disk.",
+            )
+
+        pdf_service = PDFService()
+        text = pdf_service.extract_text_from_pdf(
+            file_path=str(file_path)
+        )
+
+        text_splitter = TextSplitter()
+        chunks = text_splitter.split_text(text=text)
+
+        embedding_service = EmbeddingService()
+        embeddings = embedding_service.get_embeddings(chunks)
+
+        return {
+            "document_id": document_id,
+            "total_chunks": len(chunks),
+            "embeddings": embeddings,
+        }
