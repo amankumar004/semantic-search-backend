@@ -11,6 +11,7 @@ from app.schemas.document import ChunkRead, DocumentChunksResponse, DocumentRead
 from app.services.pdf_service import PDFService
 from app.services.text_splitter import TextSplitter
 from app.services.embedding_service import EmbeddingService
+from app.services.vector_service import VectorService
 
 # Configuration
 MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
@@ -201,3 +202,78 @@ class DocumentService:
             "total_chunks": len(chunks),
             "embeddings": embeddings,
         }
+    
+    
+    def process_document(self, document_id: int): 
+        
+        repository = DocumentRepository(self.db)
+        embedding_service = EmbeddingService()
+        vector_service = VectorService()
+        
+        # 1 - Retrieve the document
+        document = repository.get_document_by_id(document_id=document_id)
+        
+        if not document:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"Document with ID {document_id} not found.",
+            )
+        
+        # 2 - check pdf file exists
+        file_path = Path(str(document.file_path))
+        
+        if not file_path.exists():
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail=f"File for document ID {document_id} not found on disk.",
+            )
+        
+        # 3 - Extract text from PDF
+        pdf_service = PDFService()
+        
+        text = pdf_service.extract_text_from_pdf(file_path=str(file_path))
+        
+        # 4 - Split text into chunks
+        text_splitter = TextSplitter()
+        
+        chunks = text_splitter.split_text(text = text)
+        
+        if not chunks:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail=f"No text chunks could be extracted from document ID {document_id}.",
+            )
+        
+        # 5 - Generate embeddings for each chunk
+        
+        embeddings = embedding_service.get_embeddings(chunks)
+        
+        # remove old vectors for this document from Qdrant
+        vector_service.delete_by_document_id(document_id=document_id)
+        
+        # 6 - create Qdrant points
+        vectors = []
+        
+        for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+            vectors.append(
+                {
+                    "point_id": str(uuid.uuid4()),
+                    "vector": embedding,
+                    "payload": {
+                        "document_id": document_id,
+                        "chunk_index": index,
+                        "text": chunk
+                    }
+                }
+            )
+        
+        # 7 - store vectors in Qdrant
+        
+        vector_service.upsert_vectors(vectors)
+        
+        return {
+            "document_id": document_id,
+            "total_chunks": len(chunks),
+            "status": "processed"
+        }
+        

@@ -4,6 +4,8 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.schemas.document import DocumentChunksResponse, DocumentRead
 from app.services.document_service import DocumentService
+from app.schemas.search import SearchRequest, SearchResponse
+from app.services.search_service import SearchService
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -36,3 +38,32 @@ def delete_document(document_id: int, db: Session = Depends(get_db)):
 def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
     service = DocumentService(db)
     return service.get_document_chunks(document_id=document_id)
+
+@router.post("/{document_id}/process", status_code=status.HTTP_200_OK)
+def process_document(document_id: int, db: Session = Depends(get_db)):
+    service = DocumentService(db)
+    return service.process_document(document_id=document_id)
+
+@router.post("/search", response_model=SearchResponse)
+def search_documents(request: SearchRequest):
+    search_service = SearchService()
+    results = search_service.search(
+        query=request.query,
+        limit=request.limit
+    )
+    
+    formatted_results = []
+    
+    for result in results:
+        payload = result.payload or {}
+
+        formatted_results.append({
+            "score": result.score,
+            "document_id": payload.get("document_id"),
+            "chunk_index": payload.get("chunk_index"),
+            "text": payload.get("text")
+        })
+
+    return SearchResponse(query=request.query, results=formatted_results)
+        
+        
