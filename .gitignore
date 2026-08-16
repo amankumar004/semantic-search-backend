@@ -26,3 +26,5 @@ uploads/
 .pytest_cache/
 
 pytest.ini/
+
+app/config.py
