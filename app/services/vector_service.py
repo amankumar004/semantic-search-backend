@@ -2,6 +2,9 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
+from app.config import settings
+from app.models import document
+
 
 class VectorService:
 
@@ -9,8 +12,8 @@ class VectorService:
 
     def __init__(self):
         self.client = QdrantClient(
-            host="localhost",
-            port=6333
+            host=settings.qdrant_host,
+            port=settings.qdrant_port
         )
 
     def create_collection(self):
@@ -59,11 +62,21 @@ class VectorService:
             points=points
         )
     
-    def search_vectors(self, query_vector: list[float], limit: int):
+    def search_vectors(self, query_vector: list[float], limit: int, document_id: int):
+        
+        query_filter = Filter(
+            must=[
+                FieldCondition(
+                    key="document_id",
+                    match=MatchValue(value=document_id)
+                )
+            ]
+        )
         results = self.client.query_points(
             collection_name=self.COLLECTION_NAME,
             query= query_vector,
             limit= limit,
+            query_filter=query_filter,
             with_payload=True
         )
         

@@ -12,15 +12,27 @@ from app.services.pdf_service import PDFService
 from app.services.text_splitter import TextSplitter
 from app.services.embedding_service import EmbeddingService
 from app.services.vector_service import VectorService
+from app.config import settings
 
 # Configuration
-MAX_FILE_SIZE = 5 * 1024 * 1024  # 5 MB
-ALLOWED_MIME_TYPE = "application/pdf"
+MAX_FILE_SIZE = settings.max_file_size_mb * 1024 * 1024  # 5 MB
+ALLOWED_MIME_TYPE = settings.allowed_mime_type
 
 
 class DocumentService:
-    def __init__(self, db: Session):
+    def __init__(
+        self,
+        db: Session,
+        pdf_service: PDFService | None = None,
+        text_splitter: TextSplitter | None = None,
+        embedding_service: EmbeddingService | None = None,
+        vector_service: VectorService | None = None,
+    ):
         self.db = db
+        self.pdf_service = pdf_service or PDFService()
+        self.text_splitter = text_splitter or TextSplitter()
+        self.embedding_service = embedding_service or EmbeddingService()
+        self.vector_service = vector_service or VectorService()
 
     def upload_document(self, file: UploadFile) -> DocumentRead:
         # Check that a file was provided
@@ -148,12 +160,11 @@ class DocumentService:
             )
 
         # call the pdf Service to get the chunks
-        pdf_service = PDFService()
-        text = pdf_service.extract_text_from_pdf(file_path=str(file_path))
-        
-        # Return the chunks as a response
-        text_splitter = TextSplitter()
-        chunks = text_splitter.split_text(text=text)
+        text = self.pdf_service.extract_text_from_pdf(
+            file_path=str(file_path)
+        )
+
+        chunks = self.text_splitter.split_text(text=text)
         
         chunk_object = []
         
@@ -186,16 +197,13 @@ class DocumentService:
                 detail=f"File for document ID {document_id} not found on disk.",
             )
 
-        pdf_service = PDFService()
-        text = pdf_service.extract_text_from_pdf(
+        text = self.pdf_service.extract_text_from_pdf(
             file_path=str(file_path)
         )
 
-        text_splitter = TextSplitter()
-        chunks = text_splitter.split_text(text=text)
+        chunks = self.text_splitter.split_text(text=text)
 
-        embedding_service = EmbeddingService()
-        embeddings = embedding_service.get_embeddings(chunks)
+        embeddings = self.embedding_service.get_embeddings(chunks)
 
         return {
             "document_id": document_id,
@@ -204,57 +212,56 @@ class DocumentService:
         }
     
     
-    def process_document(self, document_id: int): 
-        
+    def process_document(self, document_id: int):
+
         repository = DocumentRepository(self.db)
-        embedding_service = EmbeddingService()
-        vector_service = VectorService()
-        
-        # 1 - Retrieve the document
-        document = repository.get_document_by_id(document_id=document_id)
-        
+
+        document = repository.get_document_by_id(
+            document_id=document_id
+        )
+
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"Document with ID {document_id} not found.",
             )
-        
-        # 2 - check pdf file exists
+
         file_path = Path(str(document.file_path))
-        
+
         if not file_path.exists():
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail=f"File for document ID {document_id} not found on disk.",
             )
-        
-        # 3 - Extract text from PDF
-        pdf_service = PDFService()
-        
-        text = pdf_service.extract_text_from_pdf(file_path=str(file_path))
-        
-        # 4 - Split text into chunks
-        text_splitter = TextSplitter()
-        
-        chunks = text_splitter.split_text(text = text)
-        
+
+        # Extract text
+        text = self.pdf_service.extract_text_from_pdf(
+            file_path=str(file_path)
+        )
+
+        # Split into chunks
+        chunks = self.text_splitter.split_text(text=text)
+
         if not chunks:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 detail=f"No text chunks could be extracted from document ID {document_id}.",
             )
-        
-        # 5 - Generate embeddings for each chunk
-        
-        embeddings = embedding_service.get_embeddings(chunks)
-        
-        # remove old vectors for this document from Qdrant
-        vector_service.delete_by_document_id(document_id=document_id)
-        
-        # 6 - create Qdrant points
+
+        # Generate embeddings
+        embeddings = self.embedding_service.get_embeddings(chunks)
+
+        # Remove old vectors
+        self.vector_service.delete_by_document_id(
+            document_id=document_id
+        )
+
+        # Build Qdrant points
         vectors = []
-        
-        for index, (chunk, embedding) in enumerate(zip(chunks, embeddings)):
+
+        for index, (chunk, embedding) in enumerate(
+            zip(chunks, embeddings)
+        ):
             vectors.append(
                 {
                     "point_id": str(uuid.uuid4()),
@@ -262,18 +269,17 @@ class DocumentService:
                     "payload": {
                         "document_id": document_id,
                         "chunk_index": index,
-                        "text": chunk
-                    }
+                        "text": chunk,
+                    },
                 }
             )
-        
-        # 7 - store vectors in Qdrant
-        
-        vector_service.upsert_vectors(vectors)
-        
+
+        # Store vectors
+        self.vector_service.upsert_vectors(vectors)
+
         return {
             "document_id": document_id,
             "total_chunks": len(chunks),
-            "status": "processed"
+            "status": "processed",
         }
         

@@ -44,11 +44,12 @@ def process_document(document_id: int, db: Session = Depends(get_db)):
     service = DocumentService(db)
     return service.process_document(document_id=document_id)
 
-@router.post("/search", response_model=SearchResponse)
-def search_documents(request: SearchRequest):
+@router.post("/search/{document_id}", response_model=SearchResponse)
+def search_documents(document_id: int, request: SearchRequest):
     search_service = SearchService()
     results = search_service.search(
         query=request.query,
+        document_id=document_id,
         limit=request.limit
     )
     
