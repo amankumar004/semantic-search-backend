@@ -24,4 +24,29 @@ class DocumentRepository:
         if document:
             self.db.delete(document)
             self.db.commit()
-            
+        
+    def get_document_by_id_for_user(
+        self,
+        document_id: int,
+        user_id: int
+    ) -> Document | None:
+        return (
+            self.db.query(Document)
+            .filter(
+                Document.id == document_id,
+                Document.user_id == user_id
+            )
+            .first()
+        )
+
+
+    def list_documents_for_user(
+        self,
+        user_id: int
+    ) -> list[Document]:
+        return (
+            self.db.query(Document)
+            .filter(Document.user_id == user_id)
+            .all()
+        )
+           

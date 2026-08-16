@@ -34,7 +34,7 @@ class DocumentService:
         self.embedding_service = embedding_service or EmbeddingService()
         self.vector_service = vector_service or VectorService()
 
-    def upload_document(self, file: UploadFile) -> DocumentRead:
+    def upload_document(self, file: UploadFile, user_id: int) -> DocumentRead:
         # Check that a file was provided
         if not file.filename:
             raise HTTPException(
@@ -93,6 +93,7 @@ class DocumentService:
         repository = DocumentRepository(self.db)
 
         document = Document(
+            user_id=user_id,
             original_filename=original_filename,
             stored_filename=stored_filename,
             file_path=str(file_path),
@@ -106,10 +107,10 @@ class DocumentService:
         return DocumentRead.model_validate(created_document)
     
     
-    def get_document(self, document_id: int) -> DocumentRead:
+    def get_document(self, document_id: int, user_id: int) -> DocumentRead:
         repository = DocumentRepository(self.db)
-        document = repository.get_document_by_id(document_id=document_id)
-        
+        document = repository.get_document_by_id_for_user(document_id=document_id, user_id=user_id)
+
         if not document:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
@@ -118,14 +119,14 @@ class DocumentService:
             
         return DocumentRead.model_validate(document)
     
-    def list_documents(self) -> list[DocumentRead]:
+    def list_documents(self, user_id: int) -> list[DocumentRead]:
         repository = DocumentRepository(self.db)
-        documents = repository.list_documents()
+        documents = repository.list_documents_for_user(user_id=user_id)
         return [DocumentRead.model_validate(doc) for doc in documents]
-    
-    def delete_document(self, document_id: int):
+
+    def delete_document(self, document_id: int, user_id: int):
         repository = DocumentRepository(self.db)
-        document = repository.get_document_by_id(document_id=document_id)
+        document = repository.get_document_by_id_for_user(document_id=document_id, user_id=user_id)
 
         if not document:
             raise HTTPException(

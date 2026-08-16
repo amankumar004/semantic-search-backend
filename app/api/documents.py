@@ -6,6 +6,8 @@ from app.schemas.document import DocumentChunksResponse, DocumentRead
 from app.services.document_service import DocumentService
 from app.schemas.search import SearchRequest, SearchResponse
 from app.services.search_service import SearchService
+from app.api.dependencies import get_current_user
+from app.models.user import User
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
@@ -14,26 +16,27 @@ router = APIRouter(prefix="/documents", tags=["documents"])
 def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
 ) -> DocumentRead:
     service = DocumentService(db)
-    return service.upload_document(file=file)
+    return service.upload_document(file=file, user_id=current_user.id)
 
 
 @router.get("/{document_id}", response_model=DocumentRead)
-def get_document(document_id: int, db: Session = Depends(get_db)) -> DocumentRead:
+def get_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> DocumentRead:
     service = DocumentService(db)
-    return service.get_document(document_id=document_id)
+    return service.get_document(document_id=document_id, user_id=current_user.id)
 
 @router.get("/", response_model=list[DocumentRead])
-def list_documents(db: Session = Depends(get_db)) -> list[DocumentRead]:
+def list_documents(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[DocumentRead]:
     service = DocumentService(db)
-    return service.list_documents()
+    return service.list_documents(user_id=current_user.id)
 
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
-def delete_document(document_id: int, db: Session = Depends(get_db)):
+def delete_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     service = DocumentService(db)
-    service.delete_document(document_id=document_id)
-    
+    service.delete_document(document_id=document_id, user_id=current_user.id)
+
 @router.get("/{document_id}/chunks", response_model=DocumentChunksResponse)
 def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
     service = DocumentService(db)
