@@ -142,9 +142,9 @@ class DocumentService:
         # Delete from DB
         repository.delete_document(document_id=document_id)
     
-    def get_document_chunks(self, document_id: int):
+    def get_document_chunks(self, document_id: int, user_id: int):
         repository = DocumentRepository(self.db)
-        document = repository.get_document_by_id(document_id=document_id)
+        document = repository.get_document_by_id_for_user(document_id=document_id, user_id=user_id)
 
         if not document:
             raise HTTPException(
@@ -179,10 +179,10 @@ class DocumentService:
         return DocumentChunksResponse(document_id=document_id, total_chunks=len(chunks), chunks=chunk_object)
     
     
-    def generate_document_embeddings(self, document_id: int):
+    def generate_document_embeddings(self, document_id: int, user_id: int):
         repository = DocumentRepository(self.db)
 
-        document = repository.get_document_by_id(document_id=document_id)
+        document = repository.get_document_by_id_for_user(document_id=document_id, user_id=user_id)
 
         if not document:
             raise HTTPException(
@@ -208,17 +208,19 @@ class DocumentService:
 
         return {
             "document_id": document_id,
+            "user_id": user_id,
             "total_chunks": len(chunks),
             "embeddings": embeddings,
         }
     
     
-    def process_document(self, document_id: int):
+    def process_document(self, document_id: int, user_id: int):
 
         repository = DocumentRepository(self.db)
 
-        document = repository.get_document_by_id(
-            document_id=document_id
+        document = repository.get_document_by_id_for_user(
+            document_id=document_id,
+            user_id=user_id
         )
 
         if not document:
@@ -253,8 +255,9 @@ class DocumentService:
         embeddings = self.embedding_service.get_embeddings(chunks)
 
         # Remove old vectors
-        self.vector_service.delete_by_document_id(
-            document_id=document_id
+        self.vector_service.delete_by_user_and_document(
+            document_id=document_id,
+            user_id=user_id
         )
 
         # Build Qdrant points

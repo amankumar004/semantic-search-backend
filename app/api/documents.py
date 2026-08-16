@@ -38,21 +38,22 @@ def delete_document(document_id: int, db: Session = Depends(get_db), current_use
     service.delete_document(document_id=document_id, user_id=current_user.id)
 
 @router.get("/{document_id}/chunks", response_model=DocumentChunksResponse)
-def get_document_chunks(document_id: int, db: Session = Depends(get_db)):
+def get_document_chunks(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     service = DocumentService(db)
-    return service.get_document_chunks(document_id=document_id)
+    return service.get_document_chunks(document_id=document_id, user_id=current_user.id)
 
 @router.post("/{document_id}/process", status_code=status.HTTP_200_OK)
-def process_document(document_id: int, db: Session = Depends(get_db)):
+def process_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     service = DocumentService(db)
-    return service.process_document(document_id=document_id)
+    return service.process_document(document_id=document_id, user_id=current_user.id)
 
 @router.post("/search/{document_id}", response_model=SearchResponse)
-def search_documents(document_id: int, request: SearchRequest):
+def search_documents(document_id: int, request: SearchRequest, current_user: User = Depends(get_current_user)):
     search_service = SearchService()
     results = search_service.search(
         query=request.query,
         document_id=document_id,
+        user_id=current_user.id,
         limit=request.limit
     )
     

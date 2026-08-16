@@ -2,6 +2,7 @@ from qdrant_client import QdrantClient
 from qdrant_client.models import Distance, VectorParams, PointStruct
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
+
 from app.config import settings
 from app.models import document
 
@@ -62,10 +63,14 @@ class VectorService:
             points=points
         )
     
-    def search_vectors(self, query_vector: list[float], limit: int, document_id: int):
+    def search_vectors(self, query_vector: list[float], limit: int, document_id: int, user_id: int):
         
         query_filter = Filter(
             must=[
+                FieldCondition(
+                    key="user_id",
+                    match=MatchValue(value=user_id)
+                ),
                 FieldCondition(
                     key="document_id",
                     match=MatchValue(value=document_id)
@@ -95,6 +100,27 @@ class VectorService:
             collection_name=self.COLLECTION_NAME,
             points_selector=Filter(
                 must=[
+                    FieldCondition(
+                        key="document_id",
+                        match=MatchValue(value=document_id)
+                    )
+                ]
+            )
+        )
+    
+    def delete_by_user_and_document(
+        self,
+        user_id: int,
+        document_id: int
+    ):
+        self.client.delete(
+            collection_name=self.COLLECTION_NAME,
+            points_selector=Filter(
+                must=[
+                    FieldCondition(
+                        key="user_id",
+                        match=MatchValue(value=user_id)
+                    ),
                     FieldCondition(
                         key="document_id",
                         match=MatchValue(value=document_id)
