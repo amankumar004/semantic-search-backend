@@ -3,7 +3,7 @@ from qdrant_client.models import Distance, VectorParams, PointStruct
 from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 
-from app.config import settings
+from app.config.settings import settings
 from app.models import document
 
 
