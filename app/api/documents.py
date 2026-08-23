@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
+from typing import Any, cast
 
 from app.database import get_db
 from app.schemas.document import DocumentChunksResponse, DocumentRead
@@ -8,18 +9,36 @@ from app.schemas.search import SearchRequest, SearchResponse
 from app.services.search_service import SearchService
 from app.api.dependencies import get_current_user
 from app.models.user import User
+from app.tasks.document_tasks import enqueue_document_processing
+
 
 router = APIRouter(prefix="/documents", tags=["documents"])
 
 
-@router.post("/upload", response_model=DocumentRead, status_code=status.HTTP_201_CREATED)
+@router.post(
+    "/upload",
+    response_model=DocumentRead,
+    status_code=status.HTTP_201_CREATED
+)
 def upload_document(
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
 ) -> DocumentRead:
+
     service = DocumentService(db)
-    return service.upload_document(file=file, user_id=current_user.id)
+
+    document = service.upload_document(
+        file=file,
+        user_id=current_user.id,
+    )
+
+    enqueue_document_processing(
+        document_id=document.id,
+        user_id=current_user.id,
+    )
+
+    return document
 
 
 @router.get("/{document_id}", response_model=DocumentRead)

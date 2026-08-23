@@ -1,7 +1,5 @@
 from fastapi import FastAPI
 
-from app.database import Base, engine
-
 # Import models so SQLAlchemy registers them with Base.metadata
 from app.models.user import User
 from app.models.document import Document
@@ -11,10 +9,6 @@ from app.api.auth import router as auth_router
 from app.api.dependencies import get_current_user
 from app.models.user import User
 from fastapi import Depends
-
-
-# Create database tables
-Base.metadata.create_all(bind=engine)
 
 
 # Initialize FastAPI app

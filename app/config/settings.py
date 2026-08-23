@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     allowed_mime_type: str = "application/pdf"
 
     model_config = SettingsConfigDict(
-        env_file=Path(__file__).resolve().parent.parent / ".env",
+        env_file=".env",
         extra="ignore",
     )
 
