@@ -9,6 +9,16 @@ services:
     depends_on:
       - qdrant
 
+  worker:
+    build: .
+    container_name: semantic-search-worker
+    command: celery -A app.core.celery_app worker --loglevel=info
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - qdrant
+
   qdrant:
     image: qdrant/qdrant:latest
     container_name: semantic-search-qdrant

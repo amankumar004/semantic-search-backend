@@ -4,7 +4,6 @@ from qdrant_client.models import Filter, FieldCondition, MatchValue
 
 
 from app.config.settings import settings
-from app.models import document
 
 
 class VectorService:

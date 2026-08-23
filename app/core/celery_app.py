@@ -1,10 +1,12 @@
 from celery import Celery
-import app.models
+
+from app.config import settings
+
 
 celery_app = Celery(
     "semantic_search",
-    broker="redis://localhost:6379/0",
-    backend="redis://localhost:6379/1",
+    broker=settings.celery_broker_url,
+    backend=settings.celery_result_backend,
     include=["app.tasks.document_tasks"],
 )
 

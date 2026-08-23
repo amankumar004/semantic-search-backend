@@ -2,6 +2,7 @@
 
 
 class DocumentStatus(str, Enum):
-    UPLOADED = "UPLOADED"
-    PROCESSED = "PROCESSED"
-    FAILED = "FAILED"
+    UPLOADED = "uploaded"
+    PROCESSING = "processing"
+    COMPLETED = "completed"
+    FAILED = "failed"

@@ -20,7 +20,11 @@ class Document(Base):
     file_path = Column(String(500), nullable=False)
     file_size = Column(Integer, nullable=False)
     content_type = Column(String(100), nullable=False)
-    status = Column(String(20), nullable=False, default=DocumentStatus.UPLOADED.value)
+    status: Mapped[str] = mapped_column(
+        String(20),
+        nullable=False,
+        default=DocumentStatus.UPLOADED.value,
+    )
     created_at = Column(DateTime(timezone=False), server_default=func.now(), nullable=False)
     updated_at = Column(
         DateTime(timezone=False),

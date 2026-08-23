@@ -50,3 +50,18 @@ class DocumentRepository:
             .all()
         )
            
+    def update_status(
+        self,
+        document_id: int,
+        status: str,
+    ) -> Document | None:
+        document = self.get_document_by_id(document_id=document_id)
+
+        if not document:
+            return None
+
+        document.status = status
+        self.db.commit()
+        self.db.refresh(document)
+
+        return document
