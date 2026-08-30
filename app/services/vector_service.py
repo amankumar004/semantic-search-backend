@@ -24,6 +24,10 @@ class VectorService:
                 distance=Distance.COSINE
             )
         )
+
+    def ensure_collection(self):
+        if not self.client.collection_exists(self.COLLECTION_NAME):
+            self.create_collection()
         
     def upsert_vector(
         self,

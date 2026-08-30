@@ -272,6 +272,7 @@ class DocumentService:
                     "vector": embedding,
                     "payload": {
                         "document_id": document_id,
+                        "user_id": user_id,
                         "chunk_index": index,
                         "text": chunk,
                     },

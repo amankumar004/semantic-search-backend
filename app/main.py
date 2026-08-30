@@ -1,4 +1,6 @@
-from fastapi import FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import Depends, FastAPI
 
 # Import models so SQLAlchemy registers them with Base.metadata
 from app.models.user import User
@@ -7,12 +9,17 @@ from app.models.document import Document
 from app.api.documents import router as documents_router
 from app.api.auth import router as auth_router
 from app.api.dependencies import get_current_user
-from app.models.user import User
-from fastapi import Depends
+from app.services.vector_service import VectorService
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    VectorService().ensure_collection()
+    yield
 
 
 # Initialize FastAPI app
-app = FastAPI(title="Semantic Search API")
+app = FastAPI(title="Semantic Search API", lifespan=lifespan)
 
 
 # Include routers

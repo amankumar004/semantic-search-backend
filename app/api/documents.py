@@ -41,30 +41,20 @@ def upload_document(
     return document
 
 
-@router.get("/{document_id}", response_model=DocumentRead)
-def get_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> DocumentRead:
-    service = DocumentService(db)
-    return service.get_document(document_id=document_id, user_id=current_user.id)
-
 @router.get("/", response_model=list[DocumentRead])
 def list_documents(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> list[DocumentRead]:
     service = DocumentService(db)
     return service.list_documents(user_id=current_user.id)
 
+@router.get("/{document_id}", response_model=DocumentRead)
+def get_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)) -> DocumentRead:
+    service = DocumentService(db)
+    return service.get_document(document_id=document_id, user_id=current_user.id)
+
 @router.delete("/{document_id}", status_code=status.HTTP_204_NO_CONTENT)
 def delete_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     service = DocumentService(db)
     service.delete_document(document_id=document_id, user_id=current_user.id)
-
-@router.get("/{document_id}/chunks", response_model=DocumentChunksResponse)
-def get_document_chunks(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    service = DocumentService(db)
-    return service.get_document_chunks(document_id=document_id, user_id=current_user.id)
-
-@router.post("/{document_id}/process", status_code=status.HTTP_200_OK)
-def process_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-    service = DocumentService(db)
-    return service.process_document(document_id=document_id, user_id=current_user.id)
 
 @router.post("/search/{document_id}", response_model=SearchResponse)
 def search_documents(document_id: int, request: SearchRequest, current_user: User = Depends(get_current_user)):
@@ -75,9 +65,9 @@ def search_documents(document_id: int, request: SearchRequest, current_user: Use
         user_id=current_user.id,
         limit=request.limit
     )
-    
+
     formatted_results = []
-    
+
     for result in results:
         payload = result.payload or {}
 
@@ -89,5 +79,18 @@ def search_documents(document_id: int, request: SearchRequest, current_user: Use
         })
 
     return SearchResponse(query=request.query, results=formatted_results)
-        
-        
+
+
+# --- Secondary/manual endpoints ---
+# Upload already triggers processing automatically (see enqueue_document_processing
+# above), so these are only useful for debugging the pipeline manually.
+
+@router.get("/{document_id}/chunks", response_model=DocumentChunksResponse)
+def get_document_chunks(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    service = DocumentService(db)
+    return service.get_document_chunks(document_id=document_id, user_id=current_user.id)
+
+@router.post("/{document_id}/process", status_code=status.HTTP_200_OK)
+def process_document(document_id: int, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    service = DocumentService(db)
+    return service.process_document(document_id=document_id, user_id=current_user.id)
