@@ -10,19 +10,6 @@ services:
       - uploads_data:/app/uploads
     depends_on:
       - qdrant
-      - redis
-
-  worker:
-    build: .
-    container_name: semantic-search-worker
-    command: python -m celery -A app.core.celery_app worker --loglevel=info
-    env_file:
-      - .env
-    volumes:
-      - uploads_data:/app/uploads
-    depends_on:
-      - redis
-      - qdrant
 
   qdrant:
     image: qdrant/qdrant:latest
@@ -32,13 +19,6 @@ services:
       - "6334:6334"
     volumes:
       - qdrant_storage:/qdrant/storage
-
-  redis:
-    image: redis:7-alpine
-    container_name: semantic-search-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
 
 volumes:
   qdrant_storage:

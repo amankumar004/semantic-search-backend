@@ -11,10 +11,16 @@ class VectorService:
     COLLECTION_NAME = "document_chunks"
 
     def __init__(self):
-        self.client = QdrantClient(
-            host=settings.qdrant_host,
-            port=settings.qdrant_port
-        )
+        if settings.qdrant_url:
+            self.client = QdrantClient(
+                url=settings.qdrant_url,
+                api_key=settings.qdrant_api_key,
+            )
+        else:
+            self.client = QdrantClient(
+                host=settings.qdrant_host,
+                port=settings.qdrant_port
+            )
 
     def create_collection(self):
         self.client.create_collection(

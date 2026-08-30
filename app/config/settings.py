@@ -7,8 +7,10 @@ class Settings(BaseSettings):
     app_name: str = "Semantic Search API"
     database_url: str
 
-    qdrant_host: str
-    qdrant_port: int
+    qdrant_host: str = "localhost"
+    qdrant_port: int = 6333
+    qdrant_url: str | None = None
+    qdrant_api_key: str | None = None
 
     embedding_model: str
     max_file_size_mb: int
@@ -22,9 +24,6 @@ class Settings(BaseSettings):
     jwt_secret_key: str
     jwt_algorithm: str
     jwt_expire_minutes: int
-    
-    celery_broker_url: str
-    celery_result_backend: str
 
 
 settings = Settings()  # type: ignore[call-arg]

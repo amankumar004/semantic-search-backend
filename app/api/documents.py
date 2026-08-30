@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, File, Form, UploadFile, status
+from fastapi import APIRouter, BackgroundTasks, Depends, File, Form, UploadFile, status
 from sqlalchemy.orm import Session
 from typing import Any, cast
 
@@ -9,7 +9,7 @@ from app.schemas.search import SearchRequest, SearchResponse
 from app.services.search_service import SearchService
 from app.api.dependencies import get_current_user
 from app.models.user import User
-from app.tasks.document_tasks import enqueue_document_processing
+from app.tasks.document_tasks import process_document_background
 
 
 router = APIRouter(prefix="/documents", tags=["documents"])
@@ -21,6 +21,7 @@ router = APIRouter(prefix="/documents", tags=["documents"])
     status_code=status.HTTP_201_CREATED
 )
 def upload_document(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     db: Session = Depends(get_db),
     current_user: User = Depends(get_current_user)
@@ -33,7 +34,8 @@ def upload_document(
         user_id=current_user.id,
     )
 
-    enqueue_document_processing(
+    background_tasks.add_task(
+        process_document_background,
         document_id=document.id,
         user_id=current_user.id,
     )
