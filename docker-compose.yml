@@ -6,6 +6,8 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       - qdrant
       - redis
@@ -16,6 +18,8 @@ services:
     command: python -m celery -A app.core.celery_app worker --loglevel=info
     env_file:
       - .env
+    volumes:
+      - uploads_data:/app/uploads
     depends_on:
       - redis
       - qdrant
@@ -38,3 +42,4 @@ services:
 
 volumes:
   qdrant_storage:
+  uploads_data:
